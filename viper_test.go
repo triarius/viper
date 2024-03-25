@@ -512,6 +512,30 @@ func TestUnmarshalExact(t *testing.T) {
 	assert.Error(t, err, "UnmarshalExact should error when populating a struct from a conf that contains unused fields")
 }
 
+func TestUnmarshalInline(t *testing.T) {
+	vip := New()
+	target := &struct {
+		Name     string `json:"name"`
+		Clothing struct {
+			Pants struct {
+				Size string `json:"size"`
+			} `json:",inline"`
+		} `json:"clothing"`
+	}{}
+	vip.SetConfigType("yaml")
+	r := strings.NewReader(`
+name: adam
+clothing:
+  size: large
+`)
+	vip.ReadConfig(r)
+	err := vip.Unmarshal(target, func(c *mapstructure.DecoderConfig) {
+		c.TagName = "json"
+	})
+	assert.NoError(t, err, "Unmarshal should not error when populating a struct from a conf that contains unused fields")
+	assert.Equal(t, "large", target.Clothing.Pants.Size)
+}
+
 func TestOverrides(t *testing.T) {
 	Set("age", 40)
 	assert.Equal(t, 40, Get("age"))
